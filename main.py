@@ -1,27 +1,18 @@
+import hikari
+import lightbulb
 import os
-import nextcord as discord
-from nextcord.ext import commands
 from googletrans import Translator
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-translator = Translator()
 
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID"))
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID"))
+translator = Translator()
 
-@bot.event
-async def on_ready():
-    print(f"✅ البوت شغّال الآن كـ {bot.user}")
+bot = lightbulb.Bot(prefix="!", token=os.getenv("DISCORD_TOKEN"), intents=hikari.Intents.ALL)
 
-@bot.event
-async def on_message(message):
-    if message.channel.id == SOURCE_CHANNEL_ID and not message.author.bot:
-        translated = translator.translate(message.content, dest='ar').text
-        target_channel = bot.get_channel(TARGET_CHANNEL_ID)
-        if target_channel:
-            await target_channel.send(f"**ترجمة الرسالة:**\n{translated}")
+@bot.listen(hikari.MessageCreateEvent)
+async def on_message(event):
+    if event.channel_id == SOURCE_CHANNEL_ID and not event.is_bot:
+        translated = translator.translate(event.content, dest="ar").text
+        await bot.rest.create_message(TARGET_CHANNEL_ID, f"**ترجمة الرسالة:**\n{translated}")
 
-bot.run(os.getenv("DISCORD_TOKEN"))
+bot.run()
